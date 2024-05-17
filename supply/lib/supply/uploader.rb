@@ -204,6 +204,9 @@ module Supply
         end
       else
         UI.message("Skipping release verification as per configuration.")
+        if version_code == ""
+          UI.user_error!("Must provide a version code when release verification is skipped.")
+        end
         release = AndroidPublisher::TrackRelease.new(
           version_codes: [version_code],
           status: Supply.config[:track_promote_release_status] || Supply::ReleaseStatus::COMPLETED
