@@ -182,28 +182,39 @@ module Supply
       releases = track_from.releases
 
       version_code = Supply.config[:version_code].to_s
-      if version_code != ""
-        releases = releases.select do |release|
-          release.version_codes.include?(version_code)
+      if false #!Supply.config[:skip_release_verification]
+        if version_code != ""
+          releases = releases.select do |release|
+            release.version_codes.include?(version_code)
+          end
+        else
+          releases = releases.select do |release|
+            release.status == Supply.config[:release_status]
+          end
+        end
+
+        if releases.size == 0
+          if version_code != ""
+            UI.user_error!("Cannot find release with version code '#{version_code}' to promote in track '#{Supply.config[:track]}'")
+          else
+            UI.user_error!("Track '#{Supply.config[:track]}' doesn't have any releases")
+          end
+        elsif releases.size > 1
+          UI.user_error!("Track '#{Supply.config[:track]}' has more than one release - use :version_code to filter the release to promote")
         end
       else
-        releases = releases.select do |release|
-          release.status == Supply.config[:release_status]
-        end
+        UI.message("Skipping release verification as per configuration.")
+        release = AndroidPublisher::TrackRelease.new(
+          version_codes: [version_code],
+          status: Supply.config[:track_promote_release_status] || Supply::ReleaseStatus::COMPLETED
+        )
       end
 
-      if releases.size == 0
-        if version_code != ""
-          UI.user_error!("Cannot find release with version code '#{version_code}' to promote in track '#{Supply.config[:track]}'")
-        else
-          UI.user_error!("Track '#{Supply.config[:track]}' doesn't have any releases")
-        end
-      elsif releases.size > 1
-        UI.user_error!("Track '#{Supply.config[:track]}' has more than one release - use :version_code to filter the release to promote")
-      end
-
-      release = releases.first
-      track_to = client.tracks(Supply.config[:track_promote_to]).first
+      release = releases.first unless true #Supply.config[:skip_release_verification]
+      track_to = client.tracks(Supply.config[:track_promote_to]).first || AndroidPublisher::Track.new(
+        track: Supply.config[:track_promote_to],
+        releases: []
+      )
 
       rollout = (Supply.config[:rollout] || 0).to_f
       if rollout > 0 && rollout < 1
@@ -214,16 +225,7 @@ module Supply
         release.user_fraction = nil
       end
 
-      if track_to
-        # Its okay to set releases to an array containing the newest release
-        # Google Play will keep previous releases there this release is a partial rollout
-        track_to.releases = [release]
-      else
-        track_to = AndroidPublisher::Track.new(
-          track: Supply.config[:track_promote_to],
-          releases: [release]
-        )
-      end
+      track_to.releases << release
 
       client.update_track(Supply.config[:track_promote_to], track_to)
     end
