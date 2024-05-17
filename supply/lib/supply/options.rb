@@ -174,6 +174,12 @@ module Supply
                                          UI.user_error!("file at path '#{path}' is not an aab") unless path.end_with?('.aab')
                                        end
                                      end),
+        FastlaneCore::ConfigItem.new(key: :skip_release_verification,
+                                     env_name: "SUPPLY_SKIP_RELEASE_VERIFICATION",
+                                     description: "If set to true, skips checking if the version code exists in the track before promoting",
+                                     type: Boolean,
+                                     default_value: false,
+                                     optional: true),
         FastlaneCore::ConfigItem.new(key: :skip_upload_apk,
                                      env_name: "SUPPLY_SKIP_UPLOAD_APK",
                                      optional: true,

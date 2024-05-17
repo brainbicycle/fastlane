@@ -182,7 +182,7 @@ module Supply
       releases = track_from.releases
 
       version_code = Supply.config[:version_code].to_s
-      if false #!Supply.config[:skip_release_verification]
+      if !Supply.config[:skip_release_verification]
         if version_code != ""
           releases = releases.select do |release|
             release.version_codes.include?(version_code)
@@ -210,7 +210,7 @@ module Supply
         )
       end
 
-      release = releases.first unless true #Supply.config[:skip_release_verification]
+      release = releases.first unless Supply.config[:skip_release_verification]
       track_to = client.tracks(Supply.config[:track_promote_to]).first || AndroidPublisher::Track.new(
         track: Supply.config[:track_promote_to],
         releases: []
