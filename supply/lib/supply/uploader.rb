@@ -180,9 +180,11 @@ module Supply
       end
 
       releases = track_from.releases
-      if Supply.config[:version_code].to_s != ""
+
+      version_code = Supply.config[:version_code].to_s
+      if version_code != ""
         releases = releases.select do |release|
-          release.version_codes.include?(Supply.config[:version_code].to_s)
+          release.version_codes.include?(version_code)
         end
       else
         releases = releases.select do |release|
@@ -191,7 +193,11 @@ module Supply
       end
 
       if releases.size == 0
-        UI.user_error!("Track '#{Supply.config[:track]}' doesn't have any releases")
+        if version_code != ""
+          UI.user_error!("Cannot find release with version code '#{version_code}' to promote in track '#{Supply.config[:track]}'")
+        else
+          UI.user_error!("Track '#{Supply.config[:track]}' doesn't have any releases")
+        end
       elsif releases.size > 1
         UI.user_error!("Track '#{Supply.config[:track]}' has more than one release - use :version_code to filter the release to promote")
       end
